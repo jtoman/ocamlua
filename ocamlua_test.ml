@@ -222,6 +222,41 @@ end
       ignore (Ocamlua.call state "do_test" [])
     );;
 
+let test_recursion_detection state = 
+  Ocamlua.eval_string state "
+function bad_function()
+  a = {}
+  a[\"foo\"] = a
+  return a
+end
+function bad_function_2()
+  a = {}
+  a[\"next\"] = {}
+  a[\"next\"][\"next\"] = {}
+  a[\"next\"][\"next\"][\"next\"] = a
+  return a
+end
+b = {}
+function bad_global()
+  b[\"foo\"] = b
+  return b
+end
+function good_global()
+  b[\"foo\"] = 1
+  return b
+end
+";
+  assert_raises
+    Ocamlua.Bad_value (fun () -> Ocamlua.call state "bad_function" []);
+  assert_raises
+    Ocamlua.Bad_value (fun () -> Ocamlua.call state "bad_function_2" []);
+  assert_raises
+    Ocamlua.Bad_value (fun () -> Ocamlua.call state "bad_global" []);
+  try
+    assert_equal (`Lua_Table [(`Lua_String "foo", `Lua_Number 1.0)]) (Ocamlua.call state "good_global" [])
+  with _ -> assert_failure "Exception raised where none was expected";;
+  
+
 (*
 let test_error_handler_error state = 
   Ocamlua.eval_string state "
@@ -281,7 +316,8 @@ let suite =
      "test_conversion_errors" >>:: test_conversion_errors;
      "test_gc_metamethod" >>:: test_gc_metamethod;
     (*     "test_error_handler_error" >>:: test_error_handler_error*)
-     "test_error_propagation" >>:: test_error_propagation
+     "test_error_propagation" >>:: test_error_propagation;
+     "test_recursion_detection" >>:: test_recursion_detection
 	];;
 
 let _ = 

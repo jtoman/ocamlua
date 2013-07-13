@@ -27,6 +27,7 @@ typedef struct ocamlua_cb {
 
 static void lua_to_table(lua_State*, value, int*);
 static value lua_to_value(lua_State *, int *);
+static value lua_to_value_rec_check(lua_State *, int *);
 static int *get_c_counter(lua_State*);
 static int get_sid(lua_State*);
 static void ocamlua_destroy_state(value);
@@ -143,13 +144,37 @@ static value lua_to_value(lua_State *L, int *error) {
 	  Store_field(ret, 1, recover_closure(L, -1));
 	}
   } else if(type == LUA_TTABLE) {
-	Store_field(ret, 0, hash_variant("Lua_Table"));
-	lua_to_table(L, ret, error);
+    lua_pushstring(L, "ocamlua.recursion_check"); // stack is table | "ocamlua.recursion_check"
+    lua_rawget(L, LUA_REGISTRYINDEX); // stack is table | recursion_set
+    lua_pushvalue(L, -2); // stack is table | recursion_set | table' where table = table'
+    lua_rawget(L, -2); // stack is table | recursion_set | nil or 1
+    if(lua_isnil(L, -1)) {
+      // this value hasn't been seen before
+      lua_pop(L, 1); // stack is table |  recursion_set
+      lua_pushvalue(L, -2); // stack is table | recursion_set | table' where table = table'
+      lua_pushinteger(L, 1); // stack is table | recursion_set | table' | 1
+      lua_rawset(L, -3); // set the recursion_set[table'] = 1
+      lua_pop(L, 1); // pop off the recursion set, now we're left with the table as we started out
+      Store_field(ret, 0, hash_variant("Lua_Table"));
+      lua_to_table(L, ret, error);
+    } else {
+      // we've seen this table before, error out and return
+      lua_pop(L, 2); // pop off the recursion set and the sentinel 1 value, we still have the table which will be popped off below
+      *error = 1;
+    }
   } else {
 	*error = 1;
   }
   lua_pop(L, 1);
   CAMLreturn(ret);
+}
+
+static value lua_to_value_rec_check(lua_State *L, int *error) {
+  CAMLparam0();
+  lua_pushstring(L, "ocamlua.recursion_check");
+  lua_createtable(L, 0, 10);
+  lua_rawset(L, LUA_REGISTRYINDEX);
+  CAMLreturn(lua_to_value(L, error));
 }
 
 static void lua_to_table(lua_State *L, value ret, int *error) {
@@ -210,7 +235,7 @@ static int _ocaml_func_bridge(lua_State *L) {
   int conv_error = 0;
   int *c_counter = get_c_counter(L);
   ocamlua_cb_t *cb = lua_touserdata(L, 1);
-  arg = lua_to_value(L, &conv_error);
+  arg = lua_to_value_rec_check(L, &conv_error);
   if(conv_error) {
 	CAMLreturnT(int, CONVERSION_ERROR);
   }
@@ -345,7 +370,7 @@ CAMLprim value ocamlua_call(value lua_state, value func, value arguments) {
 	code_to_exception(ret_code, L);
   }
   int conv_error = 0;
-  ret = lua_to_value(L, &conv_error);
+  ret = lua_to_value_rec_check(L, &conv_error);
   if(conv_error) {
 	caml_raise_constant(*caml_named_value("ocamlua-bad-value"));
   }
