@@ -6,8 +6,8 @@ type lua_value = [ `Lua_Table of (lua_value * lua_value) list
 					  | `Lua_Boolean of bool
 					  | `Lua_Closure of lua_closure ]
 and lua_closure = lua_value -> lua_value
-(*val list_to_table : lua_value list -> lua_value
-val table_to_list : lua_value -> lua_value list*)
+val table_of_list : lua_value list -> lua_value
+val list_of_table : lua_value -> lua_value list
 val init_state : unit -> lua_state;;
 external load_file : lua_state -> string -> unit = "ocamlua_load_file";;
 external call : lua_state -> string -> lua_value list -> lua_value = "ocamlua_call";;

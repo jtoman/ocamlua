@@ -301,10 +301,65 @@ end
       Ocamlua.call state "foo" [`Lua_Closure closure]
     );
   assert_bool "Caught exception was not the expected exception" (!test_success_flag);;
-  
+
+let test_list_conversions () = 
+  (* basic test *)
+  let basic_table = 
+    `Lua_Table [
+      (`Lua_Number 1.0, `Lua_String "hello");
+      (`Lua_Number 2.0, `Lua_String "world");
+      (`Lua_Number 3.0, `Lua_String "!")
+    ] in
+  assert_equal [`Lua_String "hello"; `Lua_String "world"; `Lua_String "!"] (Ocamlua.list_of_table basic_table);
+  (* make sure out of order tables are handled nicely *)
+  let out_of_order_table =
+    `Lua_Table [
+      (`Lua_Number 2.0, `Lua_String "hello");
+      (`Lua_Number 1.0, `Lua_Nil);
+      (`Lua_Number 4.0, `Lua_Number 3.0);
+      (`Lua_Number 3.0, `Lua_String "world")
+    ] in
+  assert_equal [`Lua_Nil; `Lua_String "hello"; `Lua_String "world"; `Lua_Number 3.0] (Ocamlua.list_of_table out_of_order_table);
+  (* do we work for empty tables? *)
+  assert_equal [] (Ocamlua.list_of_table (`Lua_Table []));
+  (* test bad types for keys *)
+  List.iter (fun l ->
+    assert_raises (Failure "non-numeric key") (fun () ->
+      Ocamlua.list_of_table (`Lua_Table l)))
+    [
+      [(`Lua_String "foo", `Lua_String "bar")];
+      [(`Lua_Number 1.0, `Lua_String "foo");
+       (`Lua_Number 2.0, `Lua_String "bar");
+       (`Lua_Boolean true, `Lua_String "oops")
+      ]
+    ];
+  (* test bad index values *)
+  List.iter (fun l ->
+    assert_raises (Failure "unexpected numeric index") (fun () ->
+      Ocamlua.list_of_table (`Lua_Table l))) 
+    [
+      [(`Lua_Number 1.0, `Lua_String "bar");
+       (`Lua_Number 1.2, `Lua_String "oh no")];
+      [(`Lua_Number 0.0, `Lua_String "oh no");
+       (`Lua_Number 1.0, `Lua_String "bar")];
+      [(`Lua_Number 0.5, `Lua_String "w")]
+    ];
+  (* finally, test conversions TO tables (this is relatively easy *)
+  assert_equal (`Lua_Table []) (Ocamlua.table_of_list []);
+  let rec test_loop table expected_ind l = match l with
+    | [] -> ()
+    | h::t -> assert_equal h (List.assoc (`Lua_Number expected_ind) table);
+        test_loop table (expected_ind +. 1.0) t
+  in
+  let input_list = [`Lua_Nil; `Lua_Boolean false; `Lua_String "qux"; `Lua_Number 3.0] in
+  match (Ocamlua.table_of_list input_list) with
+    | `Lua_Table table -> test_loop table 1.0 input_list
+    | _ -> assert_failure "Returned type was unexpected";;
+
 let suite = 
   "basic">:::
 	["test_conv">>:: test_conv;
+	 "test_list_conversions" >:: test_list_conversions;
 	 "test_callback">>:: test_callback;
 	 "test_table">>:: test_simple_table;
 	 "test_complex_callback">>::test_complex_callback;

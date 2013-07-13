@@ -12,6 +12,29 @@ let init_state () =
   let f_map = Hashtbl.create 19 in
   create_state f_map;;
 
+let table_of_list l = 
+  let rec loop (pair_accum,index) = function
+    | [] -> `Lua_Table pair_accum
+    | h::t -> loop ((`Lua_Number index,h)::pair_accum, index +. 1.0) t 
+  in
+  loop ([],1.0) l;;
+
+let list_of_table = function
+  | `Lua_Table l -> 
+      let cmp (a,_) (b,_) = match (a,b) with
+        | (`Lua_Number a',`Lua_Number b') -> compare a' b'
+        | _ -> failwith "non-numeric key" in
+      let sorted_list = List.sort cmp l in
+      let rec loop index l = match l with
+        | [] -> []
+        | (`Lua_Number i,v)::t when i = index -> 
+            v::(loop (index +. 1.0) t)
+        | (`Lua_Number _,v)::_ -> failwith "unexpected numeric index"
+        | _ -> failwith "non-numeric key" (* non-numeric keys can slip through if the user passes in a table with one element *)
+      in
+      loop 1.0 sorted_list
+  | _ -> failwith "passed value was not a table"
+      
 external load_file : lua_state -> string -> unit = "ocamlua_load_file";;
 external call : lua_state -> string -> lua_value list -> lua_value = "ocamlua_call";;
 external eval_string : lua_state -> string -> unit = "ocamlua_eval_string";;
