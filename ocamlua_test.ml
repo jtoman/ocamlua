@@ -15,18 +15,6 @@
 *)
 open OUnit;;
 
-let table_to_list = function
-  | `Lua_Table t -> 
-	let table_len = float ((List.length t) + 1) in
-	let rec loop accum = 
-	  if accum = table_len then
-		[]
-	  else
-		(List.assoc (`Lua_Number accum) t)::(loop (accum +. 1.0))
-	in
-	loop 1.0
-  | _ -> failwith "not a table"
-
 let (>>::) n f  = 
   n >:: (OUnit.bracket (fun () -> Ocamlua.init_state ()) f 
 	(fun _ -> ()));;
@@ -160,6 +148,7 @@ let test_syntax_error state =
     (Ocamlua.Syntax_error "[string \"funtion foo(x) return x + 1 end\"]:1: syntax error near 'foo'")
     (fun () -> 
       Ocamlua.eval_string state "funtion foo(x) return x + 1 end")
+
 let test_runtime_error state = 
   assert_raises
     (Ocamlua.Runtime_error "[string \"function a() return 5 + \"a\" end\"]:1: attempt to perform arithmetic on a string value")
@@ -178,11 +167,11 @@ let test_conversion_errors state =
     return co
   end
 ";
-  (* argument conversions (when calling into ocaml) become lua exceptions *)
+  (* bad argument conversions when calling into ocaml become lua exceptions *)
   assert_raises
     (Ocamlua.Runtime_error "[string \"...\"]:4: Bad arguments to ocaml callback")
     (fun () -> Ocamlua.call state "a" [`Lua_Closure (fun x -> x)]);
-  (* return conversions (returning to ocaml code) become bad value exceptions *)
+  (* conversions when returning to ocaml code become bad value exceptions *)
   assert_raises
     Ocamlua.Bad_value
     (fun () -> Ocamlua.call state "b" []);;
@@ -198,10 +187,10 @@ function a(my_f)
   f = my_f
 end
 ";
-    (* these three lines ensure that closure (a heap allocated
-       closure) is installed as the global f. After this function
-       returns, there will be no more references to this closure from
-       within this function *)
+    (* these three lines ensure that closure (heap allocated thanks to
+       the capure of the parameter y) is installed as the global f in
+       the lua environment. After this function returns, there will be
+       no more references to this closure from within this function *)
     let closure = function
       | `Lua_Number x -> `Lua_Number (x +. y)
       | _ -> assert_failure "the argument passed in was not of the expected type"
@@ -212,10 +201,18 @@ end
   in
   let g () = 
     let state = f 5.0 in
+    (* now the only reference to the method in the closure is via the
+       hash map associated with the lua state *)
     Gc.full_major ();
+    (* ensure that it didn't get picked up by garbage collection *)
     assert_bool "Closure was collected early!" (not !collected_flag);
+    (* make sure that we can stil call it *)
     assert_equal  (Ocamlua.call (state) "f" [`Lua_Number 4.0]) (`Lua_Number 9.0) in
   g ();
+  (* after returning the state created in f (called by g) has fallen
+     out of scope and is garbage. Run garbage collection and then make
+     sure that as the state went out of scope, the closure got
+     collected too *)
   Gc.full_major ();
   assert_bool "Closure was not collected!" (!collected_flag);;
 
@@ -265,33 +262,12 @@ end
     Ocamlua.Bad_value (fun () -> Ocamlua.call state "bad_function" []);
   assert_raises
     Ocamlua.Bad_value (fun () -> Ocamlua.call state "bad_function_2" []);
+  (* this tests that the recursion set gets reset every time *)
   assert_raises
     Ocamlua.Bad_value (fun () -> Ocamlua.call state "bad_global" []);
   try
     assert_equal (`Lua_Table [(`Lua_String "foo", `Lua_Number 1.0)]) (Ocamlua.call state "good_global" [])
   with _ -> assert_failure "Exception raised where none was expected";;
-  
-
-(*
-let test_error_handler_error state = 
-  Ocamlua.eval_string state "
-function f()
-  return \"a\" + 4
-end
-function msg()
-   error(\"nested error\")
-end
-function do_test()
-  status, ret = xpcall(f, msgh)
-  print(status, ret)
-end
-";
-  try 
-    ignore (Ocamlua.call state "do_test" [])
-  with
-      Ocamlua.Internal_error (Ocamlua.Err_message_handler s) ->
-        print_endline s;;
-*)
 
 let test_error_propagation state = 
   let test_success_flag = ref false in
@@ -385,7 +361,6 @@ let suite =
      "test_runtime_error" >>:: test_runtime_error;
      "test_conversion_errors" >>:: test_conversion_errors;
      "test_gc_metamethod" >>:: test_gc_metamethod;
-    (*     "test_error_handler_error" >>:: test_error_handler_error*)
      "test_error_propagation" >>:: test_error_propagation;
      "test_recursion_detection" >>:: test_recursion_detection
 	];;
