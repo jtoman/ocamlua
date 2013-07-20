@@ -295,8 +295,7 @@ end
 
 let test_list_conversions () = 
   (* basic test *)
-  let basic_table = 
-    `Lua_Table [
+  let basic_table = [
       (`Lua_Number 1.0, `Lua_String "hello");
       (`Lua_Number 2.0, `Lua_String "world");
       (`Lua_Number 3.0, `Lua_String "!")
@@ -304,7 +303,7 @@ let test_list_conversions () =
   assert_equal [`Lua_String "hello"; `Lua_String "world"; `Lua_String "!"] (Ocamlua.list_of_table basic_table);
   (* make sure out of order tables are handled nicely *)
   let out_of_order_table =
-    `Lua_Table [
+    [
       (`Lua_Number 2.0, `Lua_String "hello");
       (`Lua_Number 1.0, `Lua_Nil);
       (`Lua_Number 4.0, `Lua_Number 3.0);
@@ -312,11 +311,11 @@ let test_list_conversions () =
     ] in
   assert_equal [`Lua_Nil; `Lua_String "hello"; `Lua_String "world"; `Lua_Number 3.0] (Ocamlua.list_of_table out_of_order_table);
   (* do we work for empty tables? *)
-  assert_equal [] (Ocamlua.list_of_table (`Lua_Table []));
+  assert_equal [] (Ocamlua.list_of_table []);
   (* test bad types for keys *)
   List.iter (fun l ->
     assert_raises (Failure "non-numeric key") (fun () ->
-      Ocamlua.list_of_table (`Lua_Table l)))
+      Ocamlua.list_of_table l))
     [
       [(`Lua_String "foo", `Lua_String "bar")];
       [(`Lua_Number 1.0, `Lua_String "foo");
@@ -327,7 +326,7 @@ let test_list_conversions () =
   (* test bad index values *)
   List.iter (fun l ->
     assert_raises (Failure "unexpected numeric index") (fun () ->
-      Ocamlua.list_of_table (`Lua_Table l))) 
+      Ocamlua.list_of_table l)) 
     [
       [(`Lua_Number 1.0, `Lua_String "bar");
        (`Lua_Number 1.2, `Lua_String "oh no")];
