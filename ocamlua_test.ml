@@ -346,10 +346,15 @@ let test_list_conversions () =
     | `Lua_Table table -> test_loop table 1.0 input_list
     | _ -> assert_failure "Returned type was unexpected";;
 
+let test_load_file_error state = 
+  assert_raises (Ocamlua.No_such_file "cannot open asdffoobar: No such file or directory") (fun () ->
+    Ocamlua.load_file state "asdffoobar");;
+
 let suite = 
   "basic">:::
 	["test_conv">>:: test_conv;
 	 "test_list_conversions" >:: test_list_conversions;
+     "test_load_file_error" >>:: test_load_file_error;
 	 "test_callback">>:: test_callback;
 	 "test_table">>:: test_simple_table;
 	 "test_complex_callback">>::test_complex_callback;

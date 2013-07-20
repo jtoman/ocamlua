@@ -37,3 +37,4 @@ exception Syntax_error of string;;
 exception Runtime_error of string;;
 exception Internal_error of internal_error_code;;
 exception Bad_value;;
+exception No_such_file of string;;

@@ -328,6 +328,9 @@ static void code_to_exception(int code, lua_State *L) {
 	Store_field(arg, 0, msg);
 	caml_raise_with_arg(*caml_named_value("ocamlua-internal-error"), arg);
 	break;
+  case LUA_ERRFILE:
+    caml_raise_with_arg(*caml_named_value("ocamlua-no-such-file"), msg);
+    break;
   default:
     /* impossible case */
 	assert(0);

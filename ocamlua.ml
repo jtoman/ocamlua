@@ -109,3 +109,5 @@ let _ = Callback.register_exception "ocamlua-internal-error" (Internal_error Out
 exception Bad_value;;
 let _ = Callback.register_exception "ocamlua-bad-value" (Bad_value);;
 
+exception No_such_file of string;;
+let _ = Callback.register_exception "ocamlua-no-such-file" (No_such_file "");;
