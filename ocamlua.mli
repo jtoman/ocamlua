@@ -49,7 +49,7 @@ val init_state : unit -> lua_state;;
 *)
 
 external load_file : lua_state -> string -> unit = "ocamlua_load_file";;
-(** [call state fname] loads the Lua source code contained in the file
+(** [load_file state fname] loads the Lua source code contained in the file
     [fname] and immediately evaluates it. If the loaded code returns a
     value it is silently discarded.
     @raise No_such_file if [fname] can not be loaded by the Lua runtime

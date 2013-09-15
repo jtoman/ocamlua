@@ -24,8 +24,12 @@
 #include<lua5.2/lauxlib.h>
 #include<lua5.2/lualib.h>
 
+// magic strings for the meta-table
 #define FUNCTION_BRIDGE_METATABLE "ocamlua.method_proxy"
-#define RELEASE_CLOSURES "ocamlua.release_closures"
+#define CLOSURE_COUNTER "ocamlua.c_counter"
+#define STATE_ID "ocamlua.id"
+#define RECURSION_SET "ocamlua.recursion_check"
+
 #define OcamLuaState_val(v) (((ocamlua_state_t*)Data_custom_val(v)))
 #define OcamLuaState_tuple(v) (OcamLuaState_val(Field((v),0)))
 #define Is_state_live(v) (OcamLuaState_val((v))->L != NULL)
@@ -52,7 +56,12 @@ static int ocamlua_func_bridge(lua_State *);
 static int _ocaml_func_bridge(lua_State *);
 static void code_to_exception(int, lua_State *);
 
-
+/*
+ * Destroys the lua state on finalization and nulls it out. In the
+ * unlikely of some sort of resurrection of the ocaml value that holds
+ * this state this function also nulls out the pointer so that any
+ * errors that arise happen early. 
+ */
 static void ocamlua_destroy_state(value v) {
   lua_close(OcamLuaState_val(v)->L);
   OcamLuaState_val(v)->L = NULL;
@@ -67,24 +76,39 @@ static struct custom_operations lua_state_ops = {
   custom_deserialize_default
 };
 
-
+/*
+ * Gets the pointer to the integer that holds the closure counter for
+ * this state. This counter is used to assign a unique id to every
+ * ocaml closure that is referenced from this state. 
+ */
 static int *get_c_counter(lua_State *L) {
-  lua_pushstring(L, "ocamlua.c_counter");
+  lua_pushstring(L, CLOSURE_COUNTER);
   lua_rawget(L, LUA_REGISTRYINDEX);
   int *to_ret = lua_touserdata(L, -1);
   lua_pop(L, 1);
   return to_ret;
 }
 
+/*
+ * Gets the globally unique id assigned to this state when it was
+ * created.
+ */
 static int get_sid(lua_State *L) {
-  lua_pushstring(L, "ocamlua.id");
+  lua_pushstring(L, STATE_ID);
   lua_rawget(L, LUA_REGISTRYINDEX);
   int to_ret = lua_tointeger(L, -1);
   lua_pop(L, 1);
   return to_ret;
 }
 
-
+/*
+ * Converts an ocaml value and places it onto the top of the lua
+ * stack.
+ * Preconditions:
+ *  - None
+ * Post-conditions:
+ *  - The converted value will be pushed onto the stack
+ */
 static void value_to_lua(lua_State *L, value v, int s_id, int *c_counter) {
   CAMLparam1(v);
   CAMLlocal1(it);
@@ -121,6 +145,10 @@ static void value_to_lua(lua_State *L, value v, int s_id, int *c_counter) {
   CAMLreturn0;
 }
 
+/*
+ * Recovers the closure id'd by the ocamlua_cb record on the lua stack
+ * at index idx. Returns the fetched closure.
+ */
 static value recover_closure(lua_State *L, int idx) {
   static value *fetch_closure_f = NULL;
   ocamlua_cb_t *cb = (ocamlua_cb_t*)lua_touserdata(L, idx);
@@ -130,6 +158,17 @@ static value recover_closure(lua_State *L, int idx) {
   return caml_callback2(*fetch_closure_f, Val_long(cb->s_id), Val_long(cb->c_id));
 }
 
+/*
+ * Converts the lua value on the top of the stack to an ocaml value if
+ * possible. If an error occured during transformation then a
+ * meaningless value is returned and the integer pointer error is set
+ * to one. On success the error pointer is not set to zero.
+ * Pre-conditions:
+ *  - There is a Lua value on the top of the stack
+ *  - the integer pointed to by the error pointer is zero
+ * Post-conditions:
+ *  - The value on the top of the stack is popped from the stack
+ */
 static value lua_to_value(lua_State *L, int *error) {
   CAMLparam0();
   CAMLlocal1(ret);
@@ -159,7 +198,7 @@ static value lua_to_value(lua_State *L, int *error) {
 	  Store_field(ret, 1, recover_closure(L, -1));
 	}
   } else if(type == LUA_TTABLE) {
-    lua_pushstring(L, "ocamlua.recursion_check"); // stack is table | "ocamlua.recursion_check"
+    lua_pushstring(L, RECURSION_SET); // stack is table | "ocamlua.recursion_check"
     lua_rawget(L, LUA_REGISTRYINDEX); // stack is table | recursion_set
     lua_pushvalue(L, -2); // stack is table | recursion_set | table' where table = table'
     lua_rawget(L, -2); // stack is table | recursion_set | nil or 1
@@ -184,14 +223,49 @@ static value lua_to_value(lua_State *L, int *error) {
   CAMLreturn(ret);
 }
 
+/*
+ * The actual entry point for converting lua values to ocaml
+ * values. We explicitly track recursion in tables via a special table
+ * created in the lua registry (created in this function). Because
+ * lua_to_value makes recursive calls we need a way to ensure that one
+ * such table is used throughout the entire conversion process. This
+ * function serves such a purpose and any other functions call this
+ * function instead of calling lua_to_value directly.
+ * Pre-conditions:
+ *  - Same as lua_to_value
+ * Post-conditions;
+ *  - Same as lua_to_value
+ */
 static value lua_to_value_rec_check(lua_State *L, int *error) {
   CAMLparam0();
-  lua_pushstring(L, "ocamlua.recursion_check");
+  CAMLlocal1(to_ret);
+  // set up recursion set
+  lua_pushstring(L, RECURSION_SET);
   lua_createtable(L, 0, 10);
   lua_rawset(L, LUA_REGISTRYINDEX);
-  CAMLreturn(lua_to_value(L, error));
+
+  to_ret = lua_to_value(L, error);
+
+  // tear down recursion set
+  lua_pushstring(L, RECURSION_SET);
+  lua_pushnil(L);
+  lua_rawset(L, LUA_REGISTRYINDEX);
+  CAMLreturn(to_ret);
 }
 
+/*
+ * A separate function that handles converting a lua table to an ocaml
+ * table. In this process it may push intermediate values onto the lua
+ * stack but great care is taken that when this function returns the
+ * the stack is in the same state as entry. This function is entirely
+ * solely for creating the associative list data structure that backs
+ * the ocaml representation of a lua table. lua_to_value handles
+ * creating the tagged container and passes it in as the ret parameter
+ * Pre-conditions:
+ *  - The top of the lua stack contains a lua table
+ * Post-conditions:
+ *  - The stack is unchanged from when the function was called.
+ */
 static void lua_to_table(lua_State *L, value ret, int *error) {
   CAMLparam1(ret);
   CAMLlocal5(k, v, it, tup, cons);
@@ -232,6 +306,8 @@ static void lua_to_table(lua_State *L, value ret, int *error) {
 	}
   }
   Store_field(ret, 1, it);
+  // We do not pop off the table here, it is taken care of at the end
+  // of lua_to_value
   CAMLreturn0;
 }
 
@@ -239,6 +315,22 @@ static void lua_to_table(lua_State *L, value ret, int *error) {
 #define OCAML_ERROR 1
 #define CONVERSION_ERROR 2
 
+/*
+ * The actual bridge code. We separate this out from the immediate lua
+ * callback to so we can throw a lua exception (which requires a long
+ * jump) without confusing the data structures used by ocaml GC. So
+ * this function does what it needs to do to call into ocaml, and what
+ * the caller does afterwards is of no concern to the ocaml runtime.
+ * Preconditions: 
+ *  - There will at least one value on the stack that represents the
+ *    argument to pass to the ocaml callback
+ * Post-conditions:
+ *  - The argument passed is removed from the stack in any case.
+ *  - If there was an error executing the ocaml callback then nothing
+ * is placed on the stack and the function returns an error code
+ *  - If the ocaml callback completed successfully then the ocaml
+ * value is converted to a lua value and placed on the stack
+ */
 static int _ocaml_func_bridge(lua_State *L) {
   CAMLparam0();
   CAMLlocal2(arg, ret);
@@ -263,6 +355,10 @@ static int _ocaml_func_bridge(lua_State *L) {
   CAMLreturnT(int, SUCCESS);  
 }
 
+/*
+ * The C callback called by the lua runtime. See the above function
+ * about why we separate them out like so.
+ */
 static int ocamlua_func_bridge(lua_State *L) {
   if(lua_gettop(L) != 2) {
 	return luaL_error(L, "too many arguments");
@@ -287,7 +383,7 @@ CAMLprim value ocamlua_create_state(value f_map) {
   lua_pushcfunction(L, ocamlua_func_bridge); // the function to associate with the key (the top of the stack is now at index 3)
   lua_rawset(L, 1); // after this line, the key and value will be popped off the stack, all that will be left is the metatable at index 1
   lua_pop(L, 1); // balance the stack, we can get the metatable back by the key
-  lua_pushstring(L, "ocamlua.c_counter");
+  lua_pushstring(L, CLOSURE_COUNTER);
   *((int*)lua_newuserdata(L, sizeof(int))) = 0;
   lua_rawset(L, LUA_REGISTRYINDEX);
 
@@ -296,7 +392,7 @@ CAMLprim value ocamlua_create_state(value f_map) {
   Store_field(t, 0, state_v);
   Store_field(t, 1, f_map);
   int id = Long_val(caml_callback(*caml_named_value("ocamlua.register_state"), t));
-  lua_pushstring(L, "ocamlua.id");
+  lua_pushstring(L, STATE_ID);
   lua_pushinteger(L, id);
   lua_rawset(L, LUA_REGISTRYINDEX);
   OcamLuaState_val(state_v)->L = L;
@@ -304,6 +400,15 @@ CAMLprim value ocamlua_create_state(value f_map) {
   CAMLreturn(t);
 }
 
+/*
+ * Converts a lua error code into an ocaml exception and raises it.
+ * Does not return.
+ * Pre-conditions:
+ *  - If the error is anything other than and out of memory error then 
+ * the error message is the top of the stack
+ * Post-conditions:
+ *  - The error message should it exist, is popped from the stack
+ */
 static void code_to_exception(int code, lua_State *L) {
   CAMLparam0();
   CAMLlocal2(arg, msg);
