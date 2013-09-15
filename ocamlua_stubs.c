@@ -20,9 +20,9 @@
 #include<caml/callback.h>
 #include<caml/fail.h>
 #include<assert.h>
-#include<lua5.2/lua.h>
-#include<lua5.2/lauxlib.h>
-#include<lua5.2/lualib.h>
+#include<lua.h>
+#include<lauxlib.h>
+#include<lualib.h>
 
 // magic strings for the meta-table
 #define FUNCTION_BRIDGE_METATABLE "ocamlua.method_proxy"

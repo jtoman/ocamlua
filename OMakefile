@@ -1,0 +1,42 @@
+# Change this to the name of the lua library on your system
+LUA_LIB = lua5.2
+# change this to the directory where the lua header files are stored
+LUA_INCLUDE_DIR = /usr/include/lua5.2
+
+OBJ = 
+TARGETS = libocamlua.a
+if $(NATIVE_ENABLED)
+	TARGETS += ocamlua.cmxa ocamlua.a
+	OBJ += ocamlua.cmx
+	export
+if $(BYTE_ENABLED)
+	TARGETS += ocamlua.cma
+	OBJ += ocamlua.cmo
+	export
+
+C_OBJ = ocamlua_stubs.o
+
+$(C_OBJ): ocamlua_stubs.c
+	$(OCAMLC) -ccopt -Wall -ccopt -fPIC  -I $(LUA_INCLUDE_DIR) $<
+
+$(TARGETS): $(C_OBJ) $(OBJ)
+	ocamlmklib -o ocamlua $^ -l$(LUA_LIB)
+
+.DEFAULT: $(TARGETS)
+
+.PHONY: clean
+
+
+OCAML_LIBS += ocamlua
+OCAML_NATIVE_LINK_FLAGS += -cclib -L.
+OCAMLPACKS[] = 
+	oUnit
+FILES[] = 
+	ocamlua_test
+PROGRAM = ocamlua_test
+USE_OCAMLFIND = true
+
+OCamlProgram($(PROGRAM), $(FILES))
+
+clean:
+	rm -f $(TARGETS) $(C_OBJ) dllocamlua.so libocamlua.a ocamlua.a *.cm* *.o ocamlua_test.opt ocamlua_test ocamlua_test.run
