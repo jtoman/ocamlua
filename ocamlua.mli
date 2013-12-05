@@ -19,12 +19,12 @@
 type lua_state
 (** An opaque datatype representing the underlying Lua state *)
 
-type lua_value = [ `Lua_Table of lua_table
-				 | `Lua_Nil (** The empty value *)
-				 | `Lua_String of string
-				 | `Lua_Number of float (** The numeric type in Lua. Lua does not have a separate type for integers: all numeric values are of type float (this actually depends on the compile flags used for the Lua runtime, but this library will only compile if floats are used for Lua numbers *)
-				 | `Lua_Boolean of bool
-				 | `Lua_Closure of lua_closure ]
+type lua_value =  Lua_Table of lua_table
+				 | Lua_Nil (** The empty value *)
+				 | Lua_String of string
+				 | Lua_Number of float (** The numeric type in Lua. Lua does not have a separate type for integers: all numeric values are of type float (this actually depends on the compile flags used for the Lua runtime, but this library will only compile if floats are used for Lua numbers *)
+				 | Lua_Boolean of bool
+				 | Lua_Closure of lua_closure 
 (** Values that can be shared between the Lua runtime and OCaml code *)
 and lua_table =  (lua_value * lua_value) list
 (** An associative list corresponding to a Lua table. As in Lua, keys

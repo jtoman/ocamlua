@@ -14,12 +14,12 @@
    limitations under the License.
 *)
 type lua_state
-type lua_value = [ `Lua_Table of lua_table
-					  | `Lua_Nil
-					  | `Lua_String of string
-					  | `Lua_Number of float
-					  | `Lua_Boolean of bool
-					  | `Lua_Closure of lua_closure] 
+type lua_value = Lua_Table of lua_table
+					  | Lua_Nil
+					  | Lua_String of string
+					  | Lua_Number of float
+					  | Lua_Boolean of bool
+					  | Lua_Closure of lua_closure
 and lua_table =  (lua_value * lua_value) list
 and lua_closure = lua_value -> lua_value
 type func_map = (int, lua_closure) Hashtbl.t
@@ -30,21 +30,21 @@ let init_state () =
 
 let table_of_list l = 
   let rec loop (pair_accum,index) = function
-    | [] -> `Lua_Table pair_accum
-    | h::t -> loop ((`Lua_Number index,h)::pair_accum, index +. 1.0) t 
+    | [] -> Lua_Table pair_accum
+    | h::t -> loop ((Lua_Number index,h)::pair_accum, index +. 1.0) t 
   in
   loop ([],1.0) l;;
 
 let list_of_table l = 
   let cmp (a,_) (b,_) = match (a,b) with
-    | (`Lua_Number a',`Lua_Number b') -> compare a' b'
+    | (Lua_Number a',Lua_Number b') -> compare a' b'
     | _ -> failwith "non-numeric key" in
   let sorted_list = List.sort cmp l in
   let rec loop index l = match l with
     | [] -> []
-    | (`Lua_Number i,v)::t when i = index -> 
+    | (Lua_Number i,v)::t when i = index -> 
         v::(loop (index +. 1.0) t)
-    | (`Lua_Number _,v)::_ -> failwith "unexpected numeric index"
+    | (Lua_Number _,v)::_ -> failwith "unexpected numeric index"
     | _ -> failwith "non-numeric key" (* non-numeric keys can slip through if the user passes in a table with one element *)
   in
   loop 1.0 sorted_list;;

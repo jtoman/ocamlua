@@ -30,13 +30,13 @@ let test_conv state =
 	(fun x ->
 	  assert_equal x
 		(Ocamlua.call state "id" [x])
-	) [`Lua_Number 4.0; `Lua_String "4"; `Lua_String "foo"; `Lua_Nil; `Lua_Boolean true];;
+	) [Ocamlua.Lua_Number 4.0; Ocamlua.Lua_String "4"; Ocamlua.Lua_String "foo"; Ocamlua.Lua_Nil; Ocamlua.Lua_Boolean true];;
 
 let test_simple_table state = 
-  let table = `Lua_Table [
-	(`Lua_Number 1.0, `Lua_Number 3.0);
-	(`Lua_Number 2.0, `Lua_Number 4.0);
-	(`Lua_Number 3.0, `Lua_String "foo")
+  let table = Ocamlua.Lua_Table [
+	(Ocamlua.Lua_Number 1.0, Ocamlua.Lua_Number 3.0);
+	(Ocamlua.Lua_Number 2.0, Ocamlua.Lua_Number 4.0);
+	(Ocamlua.Lua_Number 3.0, Ocamlua.Lua_String "foo")
   ] in
   Ocamlua.eval_string state "
 function foo(t)
@@ -47,11 +47,11 @@ end
 ";
   let ret = Ocamlua.call state "foo" [table] in
   match ret with
-  | `Lua_Table x -> 
+  | Ocamlua.Lua_Table x -> 
 	assert_equal 3 (List.length x);
-	assert_equal (`Lua_Number 4.0) (List.assoc (`Lua_Number 1.0) x);
-	assert_equal (`Lua_String "foo") (List.assoc (`Lua_Number 2.0) x);
-	assert_equal (`Lua_Number 3.0) (List.assoc (`Lua_Number 3.0) x);
+	assert_equal (Ocamlua.Lua_Number 4.0) (List.assoc (Ocamlua.Lua_Number 1.0) x);
+	assert_equal (Ocamlua.Lua_String "foo") (List.assoc (Ocamlua.Lua_Number 2.0) x);
+	assert_equal (Ocamlua.Lua_Number 3.0) (List.assoc (Ocamlua.Lua_Number 3.0) x);
   | _ -> assert_failure "returned value was not a table";;
 
 let test_callback state = 
@@ -60,13 +60,13 @@ function t(a)
    return a(4)
 end
 ");
-  let ret = Ocamlua.call state "t" [`Lua_Closure (
+  let ret = Ocamlua.call state "t" [Ocamlua.Lua_Closure (
 	function 
-	| `Lua_Number x -> assert_equal 4.0 x;
-	  `Lua_Number (x +. 6.0)
+	| Ocamlua.Lua_Number x -> assert_equal 4.0 x;
+	  Ocamlua.Lua_Number (x +. 6.0)
 	| _ -> assert_failure "got a different result type"
   )] in
-  assert_equal (`Lua_Number 10.0) ret;;
+  assert_equal (Ocamlua.Lua_Number 10.0) ret;;
 
 let test_garbage_collection () = 
   (* tests that the lua state is released from the weak global list of states
@@ -82,9 +82,9 @@ let test_garbage_collection () =
   let a s = 
     let closure _ = Ocamlua.eval_string s "
 function foo(x) return x + 1 end
-"; `Lua_Nil in
-    match Ocamlua.call s "id" [`Lua_Closure closure] with
-      | `Lua_Closure x -> x
+"; Ocamlua.Lua_Nil in
+    match Ocamlua.call s "id" [Ocamlua.Lua_Closure closure] with
+      | Ocamlua.Lua_Closure x -> x
       | _ -> assert_failure "unexpected type"
   in
   let test_body () = 
@@ -118,20 +118,20 @@ function a(x,y)
 end
 ";
   let ret = Ocamlua.call state "a" [
-	`Lua_Table [
-	  (`Lua_String "foo", `Lua_Number 5.0)
+	Ocamlua.Lua_Table [
+	  (Ocamlua.Lua_String "foo", Ocamlua.Lua_Number 5.0)
 	];
-	`Lua_Closure func
+	Ocamlua.Lua_Closure func
   ] in
-  assert_equal (`Lua_Number 6.0) ret;;
+  assert_equal (Ocamlua.Lua_Number 6.0) ret;;
 
 let test_higher_order_functions state = 
   let f = function
-    | `Lua_Closure g -> g (`Lua_Number 4.0)
+    | Ocamlua.Lua_Closure g -> g (Ocamlua.Lua_Number 4.0)
     | _ -> assert_failure "The passed value was not the expected type"
   in
   let g = function
-    | `Lua_Number x -> `Lua_String (Printf.sprintf "%d" (int_of_float x))
+    | Ocamlua.Lua_Number x -> Ocamlua.Lua_String (Printf.sprintf "%d" (int_of_float x))
     | _ -> assert_failure "the passed value was not the expected type"
   in
   Ocamlua.eval_string state "
@@ -139,8 +139,8 @@ function hof(f,g)
   return f(g)
 end
 ";
-  match Ocamlua.call state "hof" [`Lua_Closure f; `Lua_Closure g] with
-    | `Lua_String s -> assert_equal s "4"
+  match Ocamlua.call state "hof" [Ocamlua.Lua_Closure f; Ocamlua.Lua_Closure g] with
+    | Ocamlua.Lua_String s -> assert_equal s "4"
     | _ -> assert_failure "Returned value was not the expected type";;
 
 let test_syntax_error state =
@@ -170,7 +170,7 @@ let test_conversion_errors state =
   (* bad argument conversions when calling into ocaml become lua exceptions *)
   assert_raises
     (Ocamlua.Runtime_error "[string \"...\"]:4: Bad arguments to ocaml callback")
-    (fun () -> Ocamlua.call state "a" [`Lua_Closure (fun x -> x)]);
+    (fun () -> Ocamlua.call state "a" [Ocamlua.Lua_Closure (fun x -> x)]);
   (* conversions when returning to ocaml code become bad value exceptions *)
   assert_raises
     Ocamlua.Bad_value
@@ -192,11 +192,11 @@ end
        the lua environment. After this function returns, there will be
        no more references to this closure from within this function *)
     let closure = function
-      | `Lua_Number x -> `Lua_Number (x +. y)
+      | Ocamlua.Lua_Number x -> Ocamlua.Lua_Number (x +. y)
       | _ -> assert_failure "the argument passed in was not of the expected type"
     in
     Gc.finalise finalizer closure;
-    let _ = Ocamlua.call (state) "a" [`Lua_Closure closure] in
+    let _ = Ocamlua.call (state) "a" [Ocamlua.Lua_Closure closure] in
     state 
   in
   let g () = 
@@ -207,7 +207,7 @@ end
     (* ensure that it didn't get picked up by garbage collection *)
     assert_bool "Closure was collected early!" (not !collected_flag);
     (* make sure that we can stil call it *)
-    assert_equal  (Ocamlua.call (state) "f" [`Lua_Number 4.0]) (`Lua_Number 9.0) in
+    assert_equal  (Ocamlua.call (state) "f" [Ocamlua.Lua_Number 4.0]) (Ocamlua.Lua_Number 9.0) in
   g ();
   (* after returning the state created in f (called by g) has fallen
      out of scope and is garbage. Run garbage collection and then make
@@ -266,7 +266,7 @@ end
   assert_raises
     Ocamlua.Bad_value (fun () -> Ocamlua.call state "bad_global" []);
   try
-    assert_equal (`Lua_Table [(`Lua_String "foo", `Lua_Number 1.0)]) (Ocamlua.call state "good_global" [])
+    assert_equal (Ocamlua.Lua_Table [(Ocamlua.Lua_String "foo", Ocamlua.Lua_Number 1.0)]) (Ocamlua.call state "good_global" [])
   with _ -> assert_failure "Exception raised where none was expected";;
 
 let test_error_propagation state = 
@@ -289,27 +289,27 @@ end
   assert_raises
     (Ocamlua.Runtime_error "[string \"...\"]:3: Exception in ocaml callback")
     (fun () ->
-      Ocamlua.call state "foo" [`Lua_Closure closure]
+      Ocamlua.call state "foo" [Ocamlua.Lua_Closure closure]
     );
   assert_bool "Caught exception was not the expected exception" (!test_success_flag);;
 
 let test_list_conversions () = 
   (* basic test *)
   let basic_table = [
-      (`Lua_Number 1.0, `Lua_String "hello");
-      (`Lua_Number 2.0, `Lua_String "world");
-      (`Lua_Number 3.0, `Lua_String "!")
+      (Ocamlua.Lua_Number 1.0, Ocamlua.Lua_String "hello");
+      (Ocamlua.Lua_Number 2.0, Ocamlua.Lua_String "world");
+      (Ocamlua.Lua_Number 3.0, Ocamlua.Lua_String "!")
     ] in
-  assert_equal [`Lua_String "hello"; `Lua_String "world"; `Lua_String "!"] (Ocamlua.list_of_table basic_table);
+  assert_equal [Ocamlua.Lua_String "hello"; Ocamlua.Lua_String "world"; Ocamlua.Lua_String "!"] (Ocamlua.list_of_table basic_table);
   (* make sure out of order tables are handled nicely *)
   let out_of_order_table =
     [
-      (`Lua_Number 2.0, `Lua_String "hello");
-      (`Lua_Number 1.0, `Lua_Nil);
-      (`Lua_Number 4.0, `Lua_Number 3.0);
-      (`Lua_Number 3.0, `Lua_String "world")
+      (Ocamlua.Lua_Number 2.0, Ocamlua.Lua_String "hello");
+      (Ocamlua.Lua_Number 1.0, Ocamlua.Lua_Nil);
+      (Ocamlua.Lua_Number 4.0, Ocamlua.Lua_Number 3.0);
+      (Ocamlua.Lua_Number 3.0, Ocamlua.Lua_String "world")
     ] in
-  assert_equal [`Lua_Nil; `Lua_String "hello"; `Lua_String "world"; `Lua_Number 3.0] (Ocamlua.list_of_table out_of_order_table);
+  assert_equal [Ocamlua.Lua_Nil; Ocamlua.Lua_String "hello"; Ocamlua.Lua_String "world"; Ocamlua.Lua_Number 3.0] (Ocamlua.list_of_table out_of_order_table);
   (* do we work for empty tables? *)
   assert_equal [] (Ocamlua.list_of_table []);
   (* test bad types for keys *)
@@ -317,10 +317,10 @@ let test_list_conversions () =
     assert_raises (Failure "non-numeric key") (fun () ->
       Ocamlua.list_of_table l))
     [
-      [(`Lua_String "foo", `Lua_String "bar")];
-      [(`Lua_Number 1.0, `Lua_String "foo");
-       (`Lua_Number 2.0, `Lua_String "bar");
-       (`Lua_Boolean true, `Lua_String "oops")
+      [(Ocamlua.Lua_String "foo", Ocamlua.Lua_String "bar")];
+      [(Ocamlua.Lua_Number 1.0, Ocamlua.Lua_String "foo");
+       (Ocamlua.Lua_Number 2.0, Ocamlua.Lua_String "bar");
+       (Ocamlua.Lua_Boolean true, Ocamlua.Lua_String "oops")
       ]
     ];
   (* test bad index values *)
@@ -328,22 +328,22 @@ let test_list_conversions () =
     assert_raises (Failure "unexpected numeric index") (fun () ->
       Ocamlua.list_of_table l)) 
     [
-      [(`Lua_Number 1.0, `Lua_String "bar");
-       (`Lua_Number 1.2, `Lua_String "oh no")];
-      [(`Lua_Number 0.0, `Lua_String "oh no");
-       (`Lua_Number 1.0, `Lua_String "bar")];
-      [(`Lua_Number 0.5, `Lua_String "w")]
+      [(Ocamlua.Lua_Number 1.0, Ocamlua.Lua_String "bar");
+       (Ocamlua.Lua_Number 1.2, Ocamlua.Lua_String "oh no")];
+      [(Ocamlua.Lua_Number 0.0, Ocamlua.Lua_String "oh no");
+       (Ocamlua.Lua_Number 1.0, Ocamlua.Lua_String "bar")];
+      [(Ocamlua.Lua_Number 0.5, Ocamlua.Lua_String "w")]
     ];
   (* finally, test conversions TO tables (this is relatively easy *)
-  assert_equal (`Lua_Table []) (Ocamlua.table_of_list []);
+  assert_equal (Ocamlua.Lua_Table []) (Ocamlua.table_of_list []);
   let rec test_loop table expected_ind l = match l with
     | [] -> ()
-    | h::t -> assert_equal h (List.assoc (`Lua_Number expected_ind) table);
+    | h::t -> assert_equal h (List.assoc (Ocamlua.Lua_Number expected_ind) table);
         test_loop table (expected_ind +. 1.0) t
   in
-  let input_list = [`Lua_Nil; `Lua_Boolean false; `Lua_String "qux"; `Lua_Number 3.0] in
+  let input_list = [Ocamlua.Lua_Nil; Ocamlua.Lua_Boolean false; Ocamlua.Lua_String "qux"; Ocamlua.Lua_Number 3.0] in
   match (Ocamlua.table_of_list input_list) with
-    | `Lua_Table table -> test_loop table 1.0 input_list
+    | Ocamlua.Lua_Table table -> test_loop table 1.0 input_list
     | _ -> assert_failure "Returned type was unexpected";;
 
 let test_load_file_error state = 

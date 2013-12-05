@@ -34,6 +34,13 @@
 #define OcamLuaState_tuple(v) (OcamLuaState_val(Field((v),0)))
 #define Is_state_live(v) (OcamLuaState_val((v))->L != NULL)
 
+#define TABLE_TAG 0
+#define STRING_TAG 1
+#define NUMBER_TAG 2
+#define BOOLEAN_TAG 3
+#define CLOSURE_TAG 4
+#define NIL_VAL (Val_int(0))
+
 typedef struct ocamlua_state {
   lua_State *L;
   int id;
@@ -112,21 +119,23 @@ static int get_sid(lua_State *L) {
 static void value_to_lua(lua_State *L, value v, int s_id, int *c_counter) {
   CAMLparam1(v);
   CAMLlocal1(it);
-  if(Is_long(v) && v == hash_variant("Lua_Nil")) {
+  if(Is_long(v) && v == NIL_VAL) {
 	lua_pushnil(L);
-  } else if(Field(v, 0) == hash_variant("Lua_String")) {
-	lua_pushstring(L, String_val(Field(v, 1)));
-  } else if(Field(v, 0) == hash_variant("Lua_Number")) {
-	lua_pushnumber(L, Double_val(Field(v, 1)));
-  } else if(Field(v, 0) == hash_variant("Lua_Boolean")) {
-	lua_pushboolean(L, Bool_val(Field(v, 1)));
-  } else if(Field(v, 0) == hash_variant("Lua_Closure")) {
+    // TODO(jtoman): a switch/case might be more efficient
+    // assuming the c compiler doesn't do that for us already
+  } else if(Tag_val(v) == STRING_TAG) {
+	lua_pushstring(L, String_val(Field(v, 0)));
+  } else if(Tag_val(v) == NUMBER_TAG) {
+	lua_pushnumber(L, Double_val(Field(v, 0)));
+  } else if(Tag_val(v) == BOOLEAN_TAG) {
+	lua_pushboolean(L, Bool_val(Field(v, 0)));
+  } else if(Tag_val(v) == CLOSURE_TAG) {
 	static value *register_closure_f = NULL;
 	if(register_closure_f == NULL) {
 	  register_closure_f = caml_named_value("ocamlua.register_closure");
 	}
 	int c_id = (*c_counter)++;
-	caml_callback3(*register_closure_f, Val_long(s_id), Val_long(c_id), Field(v, 1));
+	caml_callback3(*register_closure_f, Val_long(s_id), Val_long(c_id), Field(v, 0));
 	ocamlua_cb_t *cb = lua_newuserdata(L, sizeof(ocamlua_cb_t));
 	cb->c_id = c_id;
 	cb->s_id = s_id;
@@ -134,7 +143,7 @@ static void value_to_lua(lua_State *L, value v, int s_id, int *c_counter) {
   } else {
 	lua_newtable(L);
 	int table_ind = lua_absindex(L, -1);
-	it = Field(v, 1);
+	it = Field(v, 0);
 	while(it != Val_int(0)) {
 	  value_to_lua(L, Field(Field(it, 0), 0), s_id, c_counter);
 	  value_to_lua(L, Field(Field(it, 0), 1), s_id, c_counter);
@@ -173,20 +182,17 @@ static value lua_to_value(lua_State *L, int *error) {
   CAMLparam0();
   CAMLlocal1(ret);
   int type = lua_type(L, -1);
-  if(type != LUA_TNIL) {
-	ret = caml_alloc(2, 0);
-  }
   if(type == LUA_TSTRING) {
-	Store_field(ret, 0, hash_variant("Lua_String"));
-	Store_field(ret, 1, caml_copy_string(lua_tostring(L, -1)));
+    ret = caml_alloc(1, STRING_TAG);
+	Store_field(ret, 0, caml_copy_string(lua_tostring(L, -1)));
   } else if(type == LUA_TNUMBER) {
-	Store_field(ret, 0, hash_variant("Lua_Number"));
-	Store_field(ret, 1, caml_copy_double(lua_tonumber(L, -1)));
+    ret = caml_alloc(1, NUMBER_TAG);
+	Store_field(ret, 0, caml_copy_double(lua_tonumber(L, -1)));
   } else if(type == LUA_TNIL) {
-	ret = caml_hash_variant("Lua_Nil");
+	ret = NIL_VAL;
   } else if(type == LUA_TBOOLEAN) {
-	Store_field(ret, 0, hash_variant("Lua_Boolean"));
-	Store_field(ret, 1, Val_bool(lua_toboolean(L, -1)));
+    ret = caml_alloc(1, BOOLEAN_TAG);
+	Store_field(ret, 0, Val_bool(lua_toboolean(L, -1)));
   } else if(type == LUA_TUSERDATA && lua_getmetatable(L, -1)) {
 	luaL_getmetatable(L, FUNCTION_BRIDGE_METATABLE);
 	int comp = lua_compare(L, -1, -2, LUA_OPEQ);
@@ -194,8 +200,8 @@ static value lua_to_value(lua_State *L, int *error) {
 	if(comp != 1) {
 	  *error = 1;
 	} else {
-	  Store_field(ret, 0, hash_variant("Lua_Closure"));
-	  Store_field(ret, 1, recover_closure(L, -1));
+      ret = caml_alloc(1, CLOSURE_TAG);
+	  Store_field(ret, 0, recover_closure(L, -1));
 	}
   } else if(type == LUA_TTABLE) {
     lua_pushstring(L, RECURSION_SET); // stack is table | "ocamlua.recursion_check"
@@ -209,7 +215,7 @@ static value lua_to_value(lua_State *L, int *error) {
       lua_pushinteger(L, 1); // stack is table | recursion_set | table' | 1
       lua_rawset(L, -3); // set the recursion_set[table'] = 1
       lua_pop(L, 1); // pop off the recursion set, now we're left with the table as we started out
-      Store_field(ret, 0, hash_variant("Lua_Table"));
+      ret = caml_alloc(1, TABLE_TAG);
       lua_to_table(L, ret, error);
     } else {
       // we've seen this table before, error out and return
@@ -305,7 +311,7 @@ static void lua_to_table(lua_State *L, value ret, int *error) {
 	  lua_pop(L, 1);
 	}
   }
-  Store_field(ret, 1, it);
+  Store_field(ret, 0, it);
   // We do not pop off the table here, it is taken care of at the end
   // of lua_to_value
   CAMLreturn0;
