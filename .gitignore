@@ -1,0 +1,8 @@
+*.cm*
+*.o
+*.so
+*.a
+ocamlua_test
+ocamlua_test.opt
+.omakedb*
+*.omc
