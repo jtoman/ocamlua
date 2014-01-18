@@ -3,8 +3,31 @@ LUA_LIB = lua5.2
 # change this to the directory where the lua header files are stored
 LUA_INCLUDE_DIR = /usr/include/lua5.2
 
+if $(not $(defined DEST_DIR))
+	DEST_DIR = ""
+	export
+
+_LIB_DIR = 
+
+if $(defined LIB_DIR)
+	_LIB_DIR = $(LIB_DIR)
+	export
+else
+	if $(defined OCAMLLIB)
+		_LIB_DIR = $(OCAMLLIB)
+		export
+	else
+		_LIB_DIR = $(nth 0, $(shell ocamlc -where))
+		export
+	export
+
 OBJ = 
 TARGETS = libocamlua.a
+
+USE_CUSTOM = false
+MKLIB_FLAGS = 
+
+
 if $(NATIVE_ENABLED)
 	TARGETS += ocamlua.cmxa ocamlua.a
 	OBJ += ocamlua.cmx
@@ -12,6 +35,12 @@ if $(NATIVE_ENABLED)
 if $(BYTE_ENABLED)
 	TARGETS += ocamlua.cma
 	OBJ += ocamlua.cmo
+	if $(USE_CUSTOM)
+		MKLIB_FLAGS += -custom
+		export
+	else
+		TARGETS += dllocamlua.so
+		export
 	export
 
 C_OBJ = ocamlua_stubs.o
@@ -20,12 +49,20 @@ $(C_OBJ): ocamlua_stubs.c
 	$(OCAMLC) -ccopt -Wall -ccopt -fPIC  -I $(LUA_INCLUDE_DIR) $<
 
 $(TARGETS): $(C_OBJ) $(OBJ)
-	ocamlmklib -o ocamlua $^ -l$(LUA_LIB)
+	ocamlmklib $(MKLIB_FLAGS) -o ocamlua $^ -l$(LUA_LIB)
 
 .DEFAULT: $(TARGETS)
 
-.PHONY: clean
+.PHONY: clean install
 
+INSTALL_DIR = $(DEST_DIR)$(DIRSEP)$(_LIB_DIR)
+
+install: $(TARGETS)
+	$(INSTALL) -d $(INSTALL_DIR)
+	$(INSTALL) -t $(INSTALL_DIR) $(filter-out dllocamlua.so, $(TARGETS))
+	if $(and $(BYTE_ENABLED) $(USE_CUSTOM))
+		install -d $(INSTALL_DIR)$(DIRSEP)stublibs
+		$(INSTALL) -t $(INSTALL_DIR)$(DIRSEP)stublibs dllocamlua.so
 
 OCAML_LIBS += ocamlua
 OCAML_NATIVE_LINK_FLAGS += -cclib -L.
