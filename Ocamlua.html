@@ -1,0 +1,244 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Ocamlua" rel="Chapter" href="Ocamlua.html"><link title="Exceptions" rel="Section" href="#2_Exceptions">
+<link title="Helper functions" rel="Subsection" href="#3_Helperfunctions">
+<title>Ocamlua</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;</div>
+<h1>Module <a href="type_Ocamlua.html">Ocamlua</a></h1>
+
+<pre><span class="keyword">module</span> Ocamlua: <code class="code">sig</code> <a href="Ocamlua.html">..</a> <code class="code">end</code></pre><div class="info module top">
+A bridge between the OCaml and Lua runtimes that allows OCaml code
+    to call into Lua code.<br>
+</div>
+<hr width="100%">
+
+<pre><span id="TYPElua_state"><span class="keyword">type</span> <code class="type"></code>lua_state</span> </pre>
+<div class="info ">
+An opaque datatype representing the underlying Lua state<br>
+</div>
+
+
+<pre><code><span id="TYPElua_value"><span class="keyword">type</span> <code class="type"></code>lua_value</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTlua_value.Lua_Table"><span class="constructor">Lua_Table</span></span> <span class="keyword">of</span> <code class="type"><a href="Ocamlua.html#TYPElua_table">lua_table</a></code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTlua_value.Lua_Nil"><span class="constructor">Lua_Nil</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" >The empty value</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTlua_value.Lua_String"><span class="constructor">Lua_String</span></span> <span class="keyword">of</span> <code class="type">string</code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTlua_value.Lua_Number"><span class="constructor">Lua_Number</span></span> <span class="keyword">of</span> <code class="type">float</code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" >The numeric type in Lua. Lua does not have a separate type for integers: all numeric values are of type float (this actually depends on the compile flags used for the Lua runtime, but this library will only compile if floats are used for Lua numbers</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTlua_value.Lua_Boolean"><span class="constructor">Lua_Boolean</span></span> <span class="keyword">of</span> <code class="type">bool</code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTlua_value.Lua_Closure"><span class="constructor">Lua_Closure</span></span> <span class="keyword">of</span> <code class="type"><a href="Ocamlua.html#TYPElua_closure">lua_closure</a></code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" >Values that can be shared between the Lua runtime and OCaml code</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+
+
+<pre><span id="TYPElua_table"><span class="keyword">type</span> <code class="type"></code>lua_table</span> = <code class="type">(<a href="Ocamlua.html#TYPElua_value">lua_value</a> * <a href="Ocamlua.html#TYPElua_value">lua_value</a>) list</code> </pre>
+<div class="info ">
+An associative list corresponding to a Lua table. As in Lua, keys
+    may be any valid value. In the case of duplicate keys, the last
+    key in the list "wins".<br>
+</div>
+
+
+<pre><span id="TYPElua_closure"><span class="keyword">type</span> <code class="type"></code>lua_closure</span> = <code class="type"><a href="Ocamlua.html#TYPElua_value">lua_value</a> -> <a href="Ocamlua.html#TYPElua_value">lua_value</a></code> </pre>
+<div class="info ">
+The type of a callback from Lua code to Ocaml code<br>
+</div>
+
+
+<pre><span id="VALinit_state"><span class="keyword">val</span> init_state</span> : <code class="type">unit -> <a href="Ocamlua.html#TYPElua_state">lua_state</a></code></pre><div class="info ">
+Creates a new <a href="Ocamlua.html#TYPElua_state"><code class="code">Ocamlua.lua_state</code></a>. Each state created by this function is
+    completely indepedent from one another: any side effects or operations
+    in one state are not visible to any other state created by this
+    function.
+<p>
+
+    Some important implementation notes that may affect how you use
+    the returned state: when you pass an Ocaml closure into Lua code
+    as an argument to <a href="Ocamlua.html#VALcall"><code class="code">Ocamlua.call</code></a> a reference to the passed closure is
+    saved in a hash associated with the Lua state. This hash is not
+    released until the Lua state itself is released, so be aware that
+    if you pass in several distinct closures you may experience a
+    stress on memory.<br>
+</div>
+
+<pre><span id="VALload_file"><span class="keyword">val</span> load_file</span> : <code class="type"><a href="Ocamlua.html#TYPElua_state">lua_state</a> -> string -> unit</code></pre><div class="info ">
+<code class="code">load_file state fname</code> loads the Lua source code contained in the file
+    <code class="code">fname</code> and immediately evaluates it. If the loaded code returns a
+    value it is silently discarded.<br>
+<b>Raises</b><ul><li> <a href="Ocamlua.html#EXCEPTIONNo_such_file"><code class="code">Ocamlua.No_such_file</code></a> if <code class="code">fname</code> can not be loaded by the Lua runtime</li>
+<li> <a href="Ocamlua.html#EXCEPTIONSyntax_error"><code class="code">Ocamlua.Syntax_error</code></a> if the code contained in <code class="code">fname</code> is not syntatically valid Lua code</li>
+<li> <a href="Ocamlua.html#EXCEPTIONInternal_error"><code class="code">Ocamlua.Internal_error</code></a> if during the execution of the code loaded from <code class="code">fname</code> an internal error occurs</li>
+<li> <a href="Ocamlua.html#EXCEPTIONRuntime_error"><code class="code">Ocamlua.Runtime_error</code></a> if during the execution of the code loaded from <code class="code">fname</code> a runtime error occurs</li>
+</ul>
+</div>
+
+<pre><span id="VALcall"><span class="keyword">val</span> call</span> : <code class="type"><a href="Ocamlua.html#TYPElua_state">lua_state</a> -> string -> <a href="Ocamlua.html#TYPElua_value">lua_value</a> list -> <a href="Ocamlua.html#TYPElua_value">lua_value</a></code></pre><div class="info ">
+<code class="code">call state f args</code> calls the function accessible via the global
+    name <code class="code">f</code> in the state <code class="code">state</code> with the (possibly zero) arguments
+    <code class="code">args</code>. The return value of this function is the value returned by
+    <code class="code">f</code>. If <code class="code">f</code> returns more than 1 value they are silently discarded, if
+    it returns 0 values then <code class="code">`Lua_Nil</code> is returned.<br>
+<b>Raises</b><ul><li> <a href="Ocamlua.html#EXCEPTIONRuntime_error"><code class="code">Ocamlua.Runtime_error</code></a> if a Lua error is generated during the execution of <code class="code">f</code> or an OCaml callbaack raises an exception (see <a href="Ocamlua.html#EXCEPTIONRuntime_error"><code class="code">Ocamlua.Runtime_error</code></a> for details)</li>
+<li> <a href="Ocamlua.html#EXCEPTIONNo_such_method"><code class="code">Ocamlua.No_such_method</code></a> if <code class="code">f</code> does not exist in the global environment associated with <code class="code">state</code></li>
+<li> <a href="Ocamlua.html#EXCEPTIONInternal_error"><code class="code">Ocamlua.Internal_error</code></a> if a Lua internal error occurs</li>
+<li> <a href="Ocamlua.html#EXCEPTIONBad_value"><code class="code">Ocamlua.Bad_value</code></a> if <code class="code">f</code> returns a value that cannot be represented by the <a href="Ocamlua.html#TYPElua_value"><code class="code">Ocamlua.lua_value</code></a> type.</li>
+</ul>
+</div>
+
+<pre><span id="VALeval_string"><span class="keyword">val</span> eval_string</span> : <code class="type"><a href="Ocamlua.html#TYPElua_state">lua_state</a> -> string -> unit</code></pre><div class="info ">
+<code class="code">eval_string state code</code> immediately loads and executes the Lua
+    code in the string <code class="code">code</code> in the context of <code class="code">state</code>. Any side
+    effects or actions taken during the execution of <code class="code">code</code> will not
+    be visible to any other states. It is not possible to change the
+    environment of the loaded chunk. If the loaded chunk returns a value it is
+    silently discarded.<br>
+<b>Raises</b><ul><li> <a href="Ocamlua.html#EXCEPTIONSyntax_error"><code class="code">Ocamlua.Syntax_error</code></a> if the Lua code in <code class="code">code</code> is not syntatically valid</li>
+<li> <a href="Ocamlua.html#EXCEPTIONRuntime_error"><code class="code">Ocamlua.Runtime_error</code></a> if a runtime error occurs during the execution of the loaded chunk</li>
+<li> <a href="Ocamlua.html#EXCEPTIONInternal_error"><code class="code">Ocamlua.Internal_error</code></a> if a Lua internal error occurs during the evaluation of the string</li>
+</ul>
+</div>
+<br>
+<h3 id="3_Helperfunctions">Helper functions</h3><br>
+
+<pre><span id="VALtable_of_list"><span class="keyword">val</span> table_of_list</span> : <code class="type"><a href="Ocamlua.html#TYPElua_value">lua_value</a> list -> <a href="Ocamlua.html#TYPElua_value">lua_value</a></code></pre><div class="info ">
+Coverts a list Lua values into a Lua vector (with indices starting from 1).<br>
+</div>
+
+<pre><span id="VALlist_of_table"><span class="keyword">val</span> list_of_table</span> : <code class="type"><a href="Ocamlua.html#TYPElua_table">lua_table</a> -> <a href="Ocamlua.html#TYPElua_value">lua_value</a> list</code></pre><div class="info ">
+Converts a table of size n with keys 1, 2, ... n+1 into a list of Lua values. If the keys are of a non-numeric type or the keys do not have the expected order will throw a <code class="code">Failure</code> exception.<br>
+</div>
+<br>
+<h2 id="2_Exceptions">Exceptions</h2><br>
+
+<pre><code><span id="TYPEinternal_error_code"><span class="keyword">type</span> <code class="type"></code>internal_error_code</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTinternal_error_code.GC_metamethod"><span class="constructor">GC_metamethod</span></span> <span class="keyword">of</span> <code class="type">string</code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" >Thrown when an error occurs during the execution of a __gc metamethod on an object. The string argument is the error message reported by the Lua runtime</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTinternal_error_code.Err_message_handler"><span class="constructor">Err_message_handler</span></span> <span class="keyword">of</span> <code class="type">string</code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" >Thrown when an error occurs during the execution of a user installed error handler. The string argument is the error message reported by the Lua runtime</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTinternal_error_code.Out_of_memory"><span class="constructor">Out_of_memory</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" >Thrown when the Lua runtime runs out of memory. In such a situation the Lua runtime does not report any error messages</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+<div class="info ">
+Types of exceptional conditions that may occur during the
+    execution of the Lua runtime<br>
+</div>
+
+
+<pre><span id="EXCEPTIONNo_such_method"><span class="keyword">exception</span> No_such_method</span> <span class="keyword">of</span> <code class="type">string</code></pre>
+<div class="info ">
+Raised by <a href="Ocamlua.html#VALcall"><code class="code">Ocamlua.call</code></a> if the method to call does not exist. The string
+    argument is the name of the function that does<br>
+</div>
+
+<pre><span id="EXCEPTIONSyntax_error"><span class="keyword">exception</span> Syntax_error</span> <span class="keyword">of</span> <code class="type">string</code></pre>
+<div class="info ">
+Raised by <a href="Ocamlua.html#VALeval_string"><code class="code">Ocamlua.eval_string</code></a> and <a href="Ocamlua.html#VALload_file"><code class="code">Ocamlua.load_file</code></a> if the Lua source
+    code being loaded has a syntax error. The string is the error
+    reported by the Lua runtime<br>
+</div>
+
+<pre><span id="EXCEPTIONRuntime_error"><span class="keyword">exception</span> Runtime_error</span> <span class="keyword">of</span> <code class="type">string</code></pre>
+<div class="info ">
+Raised if a runtime error occurs during the execution of Lua
+    code. This includes runtime errors generated by the Lua runtime
+    (arithmetic errors, no such method, etc.) and errors generated via
+    the error function. Exceptions thrown inside of an Ocaml callback
+    are converted into a Lua error with the error string "Exception in
+    ocaml callback" and if not caught, may propagate to the top level
+    and become a Runtime_error (in this case the original exception
+    information is lost).<br>
+</div>
+
+<pre><span id="EXCEPTIONInternal_error"><span class="keyword">exception</span> Internal_error</span> <span class="keyword">of</span> <code class="type"><a href="Ocamlua.html#TYPEinternal_error_code">internal_error_code</a></code></pre>
+<div class="info ">
+Thrown when more "exotic" errors are thrown by the Lua runtime. It
+    is expected that these errors will be more uncommon and as such
+    the various error conditions are represented by tag of the
+    <a href="Ocamlua.html#TYPEinternal_error_code"><code class="code">Ocamlua.internal_error_code</code></a> argument.<br>
+</div>
+
+<pre><span id="EXCEPTIONBad_value"><span class="keyword">exception</span> Bad_value</span></pre>
+<div class="info ">
+Thrown when an error occurs converting a Lua value into an Ocaml
+    representation to return to the calling code (note that the
+    opposite can never happen, all values allowed by the <a href="Ocamlua.html#TYPElua_value"><code class="code">Ocamlua.lua_value</code></a>
+    type can be represented as Lua values, up to the practical limits
+    of the system). There are two ways a converion may fail: when the
+    conversion of a value of an inconvertible type is attempted
+    (e.g. a coroutine thread, arbitrary userdata, etc.)  or when in
+    the process of converting a table recurion is detected.
+<p>
+
+    This exception is only thrown when a coversion error occurs when
+    converting a value to return back into OCaml code. When conversion
+    fails when attempting to call back into Ocaml code, the conversion
+    error is converted into a Lua error, with the string "Bad
+    arguments to ocaml callback".<br>
+</div>
+
+<pre><span id="EXCEPTIONNo_such_file"><span class="keyword">exception</span> No_such_file</span> <span class="keyword">of</span> <code class="type">string</code></pre>
+<div class="info ">
+Thrown by <a href="Ocamlua.html#VALload_file"><code class="code">Ocamlua.load_file</code></a> when the Lua cannot load code from the
+    given file.<br>
+</div>
+</body></html>

@@ -1,0 +1,58 @@
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Ocamlua" rel="Chapter" href="Ocamlua.html"><title>Index of values</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;</div>
+<h1>Index of values</h1>
+<table>
+<tr><td align="left"><br>C</td></tr>
+<tr><td><a href="Ocamlua.html#VALcall">call</a> [<a href="Ocamlua.html">Ocamlua</a>]</td>
+<td><div class="info">
+<code class="code">call state f args</code> calls the function accessible via the global
+    name <code class="code">f</code> in the state <code class="code">state</code> with the (possibly zero) arguments
+    <code class="code">args</code>.
+</div>
+</td></tr>
+<tr><td align="left"><br>E</td></tr>
+<tr><td><a href="Ocamlua.html#VALeval_string">eval_string</a> [<a href="Ocamlua.html">Ocamlua</a>]</td>
+<td><div class="info">
+<code class="code">eval_string state code</code> immediately loads and executes the Lua
+    code in the string <code class="code">code</code> in the context of <code class="code">state</code>.
+</div>
+</td></tr>
+<tr><td align="left"><br>I</td></tr>
+<tr><td><a href="Ocamlua.html#VALinit_state">init_state</a> [<a href="Ocamlua.html">Ocamlua</a>]</td>
+<td><div class="info">
+Creates a new <a href="Ocamlua.html#TYPElua_state"><code class="code">Ocamlua.lua_state</code></a>.
+</div>
+</td></tr>
+<tr><td align="left"><br>L</td></tr>
+<tr><td><a href="Ocamlua.html#VALlist_of_table">list_of_table</a> [<a href="Ocamlua.html">Ocamlua</a>]</td>
+<td><div class="info">
+Converts a table of size n with keys 1, 2, ...
+</div>
+</td></tr>
+<tr><td><a href="Ocamlua.html#VALload_file">load_file</a> [<a href="Ocamlua.html">Ocamlua</a>]</td>
+<td><div class="info">
+<code class="code">load_file state fname</code> loads the Lua source code contained in the file
+    <code class="code">fname</code> and immediately evaluates it.
+</div>
+</td></tr>
+<tr><td align="left"><br>T</td></tr>
+<tr><td><a href="Ocamlua.html#VALtable_of_list">table_of_list</a> [<a href="Ocamlua.html">Ocamlua</a>]</td>
+<td><div class="info">
+Coverts a list Lua values into a Lua vector (with indices starting from 1).
+</div>
+</td></tr>
+</table>
+</body>
+</html>

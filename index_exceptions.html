@@ -1,0 +1,61 @@
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Ocamlua" rel="Chapter" href="Ocamlua.html"><title>Index of exceptions</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;</div>
+<h1>Index of exceptions</h1>
+<table>
+<tr><td align="left"><br>B</td></tr>
+<tr><td><a href="Ocamlua.html#EXCEPTIONBad_value">Bad_value</a> [<a href="Ocamlua.html">Ocamlua</a>]</td>
+<td><div class="info">
+Thrown when an error occurs converting a Lua value into an Ocaml
+    representation to return to the calling code (note that the
+    opposite can never happen, all values allowed by the <a href="Ocamlua.html#TYPElua_value"><code class="code">Ocamlua.lua_value</code></a>
+    type can be represented as Lua values, up to the practical limits
+    of the system).
+</div>
+</td></tr>
+<tr><td align="left"><br>I</td></tr>
+<tr><td><a href="Ocamlua.html#EXCEPTIONInternal_error">Internal_error</a> [<a href="Ocamlua.html">Ocamlua</a>]</td>
+<td><div class="info">
+Thrown when more "exotic" errors are thrown by the Lua runtime.
+</div>
+</td></tr>
+<tr><td align="left"><br>N</td></tr>
+<tr><td><a href="Ocamlua.html#EXCEPTIONNo_such_file">No_such_file</a> [<a href="Ocamlua.html">Ocamlua</a>]</td>
+<td><div class="info">
+Thrown by <a href="Ocamlua.html#VALload_file"><code class="code">Ocamlua.load_file</code></a> when the Lua cannot load code from the
+    given file.
+</div>
+</td></tr>
+<tr><td><a href="Ocamlua.html#EXCEPTIONNo_such_method">No_such_method</a> [<a href="Ocamlua.html">Ocamlua</a>]</td>
+<td><div class="info">
+Raised by <a href="Ocamlua.html#VALcall"><code class="code">Ocamlua.call</code></a> if the method to call does not exist.
+</div>
+</td></tr>
+<tr><td align="left"><br>R</td></tr>
+<tr><td><a href="Ocamlua.html#EXCEPTIONRuntime_error">Runtime_error</a> [<a href="Ocamlua.html">Ocamlua</a>]</td>
+<td><div class="info">
+Raised if a runtime error occurs during the execution of Lua
+    code.
+</div>
+</td></tr>
+<tr><td align="left"><br>S</td></tr>
+<tr><td><a href="Ocamlua.html#EXCEPTIONSyntax_error">Syntax_error</a> [<a href="Ocamlua.html">Ocamlua</a>]</td>
+<td><div class="info">
+Raised by <a href="Ocamlua.html#VALeval_string"><code class="code">Ocamlua.eval_string</code></a> and <a href="Ocamlua.html#VALload_file"><code class="code">Ocamlua.load_file</code></a> if the Lua source
+    code being loaded has a syntax error.
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<html><head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Ocamlua" rel="Chapter" href="Ocamlua.html"><title>Ocamlua</title>
+</head>
+<body>
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;lua_state<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;lua_value&nbsp;=<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Lua_Table</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Ocamlua</span>.lua_table<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Lua_Nil</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Lua_String</span>&nbsp;<span class="keyword">of</span>&nbsp;string<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Lua_Number</span>&nbsp;<span class="keyword">of</span>&nbsp;float<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Lua_Boolean</span>&nbsp;<span class="keyword">of</span>&nbsp;bool<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Lua_Closure</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Ocamlua</span>.lua_closure<br>
+&nbsp;&nbsp;<span class="keyword">and</span>&nbsp;lua_table&nbsp;=&nbsp;(<span class="constructor">Ocamlua</span>.lua_value&nbsp;*&nbsp;<span class="constructor">Ocamlua</span>.lua_value)&nbsp;list<br>
+&nbsp;&nbsp;<span class="keyword">and</span>&nbsp;lua_closure&nbsp;=&nbsp;<span class="constructor">Ocamlua</span>.lua_value&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Ocamlua</span>.lua_value<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;init_state&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Ocamlua</span>.lua_state<br>
+&nbsp;&nbsp;<span class="keyword">external</span>&nbsp;load_file&nbsp;:&nbsp;<span class="constructor">Ocamlua</span>.lua_state&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;<span class="string">"ocamlua_load_file"</span><br>
+&nbsp;&nbsp;<span class="keyword">external</span>&nbsp;call&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Ocamlua</span>.lua_state&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Ocamlua</span>.lua_value&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Ocamlua</span>.lua_value&nbsp;=&nbsp;<span class="string">"ocamlua_call"</span><br>
+&nbsp;&nbsp;<span class="keyword">external</span>&nbsp;eval_string&nbsp;:&nbsp;<span class="constructor">Ocamlua</span>.lua_state&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;<span class="string">"ocamlua_eval_string"</span><br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;table_of_list&nbsp;:&nbsp;<span class="constructor">Ocamlua</span>.lua_value&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Ocamlua</span>.lua_value<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;list_of_table&nbsp;:&nbsp;<span class="constructor">Ocamlua</span>.lua_table&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Ocamlua</span>.lua_value&nbsp;list<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;internal_error_code&nbsp;=<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">GC_metamethod</span>&nbsp;<span class="keyword">of</span>&nbsp;string<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Err_message_handler</span>&nbsp;<span class="keyword">of</span>&nbsp;string<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Out_of_memory</span><br>
+&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">No_such_method</span>&nbsp;<span class="keyword">of</span>&nbsp;string<br>
+&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">Syntax_error</span>&nbsp;<span class="keyword">of</span>&nbsp;string<br>
+&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">Runtime_error</span>&nbsp;<span class="keyword">of</span>&nbsp;string<br>
+&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">Internal_error</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Ocamlua</span>.internal_error_code<br>
+&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">Bad_value</span><br>
+&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">No_such_file</span>&nbsp;<span class="keyword">of</span>&nbsp;string<br>
+<span class="keyword">end</span></code></body></html>
