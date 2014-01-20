@@ -63,6 +63,4 @@ via DEST\_DIR on the command line.
 Documentation
 ---
 
-To get the documentation for the OCamLua library simply run ocamldoc
-on the ocamlua.mli file. Consult the official documentation for the
-full array of options.
+Consult the [official documentation](http://jtoman.github.io/ocamlua/)
